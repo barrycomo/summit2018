@@ -1,0 +1,51 @@
+version: "3.3"
+
+services:
+  echo:
+    image: jamesasher/echo-linux-amd64:0.122602
+    networks:
+      - echo-proxy-net
+    deploy:
+      mode: replicated
+      replicas: 0
+      endpoint_mode: vip
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      - SERVICE_PORTS=8080
+
+  echo-pi:
+    image: jamesasher/echo-rpi
+    networks:
+       - echo-proxy-net
+    deploy:
+      mode: replicated
+      replicas: 0
+      endpoint_mode: vip
+      placement:
+        constraints:
+          - node.role == worker
+    environment:
+      - SERVICE_PORTS=8080
+
+  echo-proxy:
+    image: dockercloud/haproxy:latest
+    ports:
+      - 80:80
+      - 1936:1936
+    networks:
+      - echo-proxy-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: vip
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  echo-proxy-net:
+    driver: overlay
